@@ -8,7 +8,7 @@ if(!requireNamespace("devtools")) install.packages("devtools")
 devtools::install_github("dkahle/ggmap")
 library("ggmap")
 
-register_google(key = "AIzaSyDhRa6sPnQsn1tW4UANmITKNF3wcx30FEw")
+register_google(key = "___")
 
 
 for(i in 1:nrow(kits.combined)){
