@@ -1,7 +1,7 @@
 library(googlesheets4)
 sheet.gid <- "1gzDR0CGf-kYddJZS7koD1iYwQQNKSiS1xdQ7AB0rxSo"
 
-kits.2019 <- read_sheet(sheet.gid, sheet = "2020")
+kits.2019 <- read_sheet(sheet.gid, sheet = "2019")
 kits.2020 <- read_sheet(sheet.gid, sheet = "2020")
 kits.2021 <- read_sheet(sheet.gid, sheet = "2021")
 
