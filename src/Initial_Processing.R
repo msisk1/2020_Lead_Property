@@ -1,6 +1,7 @@
 library(googlesheets4)
 sheet.gid <- "1gzDR0CGf-kYddJZS7koD1iYwQQNKSiS1xdQ7AB0rxSo"
 
+kits.2019 <- read_sheet(sheet.gid, sheet = "2020")
 kits.2020 <- read_sheet(sheet.gid, sheet = "2020")
 kits.2021 <- read_sheet(sheet.gid, sheet = "2021")
 
@@ -12,7 +13,6 @@ kits.combined.unique <- kits.combined[!duplicated(kits.combined$`Kit ID`), ]
 kits.ready <- kits.combined.unique[!is.na(kits.combined.unique$Address), ]
 
 kits.ready<-kits.ready[!(kits.ready$Address=="21506" | kits.ready$Address=="19391" | kits.ready$Address=="No Form Provided"),]
-
 
 
 if(!requireNamespace("devtools")) install.packages("devtools")
@@ -30,7 +30,6 @@ for(i in 1:nrow(kits.ready)){
   while(is.na(result[1])){ #checks if the latitude is NA and reruns if it is
     Sys.sleep(2) #Pauses for a minute to let the API Catch up
     result <- geocode(as.character(kits.ready$Address[i]), output = "latlona", source = "google")
-    
   } 
   kits.ready$lon[i] <- as.numeric(result[1])
   kits.ready$lat[i] <- as.numeric(result[2])
