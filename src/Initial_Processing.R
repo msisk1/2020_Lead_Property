@@ -45,4 +45,34 @@ final.kits <- read.csv('kits_ready.csv')
 
 sheet_write(final.kits, ss = "1gzDR0CGf-kYddJZS7koD1iYwQQNKSiS1xdQ7AB0rxSo", sheet = "Combined + Geocoded")
 
-install.packages("maptools")
+install.packages("leaflet")
+install.packages("sp")
+
+library (leaflet)
+library (sp)
+
+final.kits$lon <- as.numeric(final.kits$lon)
+final.kits$lat <- as.numeric(final.kits$lat)
+
+final.kits.SP <- SpatialPointsDataFrame(final.kits[,c(16,17)], final.kits[,-c(16,17)])
+
+
+m <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(data = final.kits, lng= ~lon, lat= ~lat, popup= ~Address)
+
+m
+
+library (sf)
+parcels = st_read("src/sbparcels")
+parcels <- st_transform(parcels, crs=)
+final.kits.sf = st_as_sf(final.kits, coords = c(x = "lon", y = "lat"), crs = 4326)
+
+parcel_join <- st_join(final.kits.sf, parcels, join = st_within)
+
+kit_parcel <- subset(parcel_join, select = c("Kit.ID", "PARCELID"))  
+
+
+
+                                  
+
