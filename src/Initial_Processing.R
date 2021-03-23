@@ -80,7 +80,8 @@ library(xml2)
 
 sid = "4EDA38D4D6CA4BABBDA499D4CFB99F14"
 
-# testing for a url I know works
+# testing for a url I know works, but only produces "null"- is it not reading the data properly?
+
 url<- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/ACAMA_INDIANA/tab_improve_v0704.asp?t_nm=improvements&l_cr=5&t_wc=|parcelid=", parcel_join$PARCELSTAT[5],"&sid=", sid)
 each.html <- read_html(url)
 write_html(each.html,"file.html",encoding = "UTF-8")
