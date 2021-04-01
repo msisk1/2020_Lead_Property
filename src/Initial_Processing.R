@@ -11,32 +11,43 @@ kits.combined <- rbind(kits.2019, kits.2020, kits.2021)
 kits.combined.unique <- kits.combined[!duplicated(kits.combined$`Kit ID`), ]
 
 kits.ready <- kits.combined.unique[!is.na(kits.combined.unique$Address), ]
+kits.ready$geo <- NA
 
 kits.ready<-kits.ready[!(kits.ready$Address=="21506" | kits.ready$Address=="19391" | kits.ready$Address=="No Form Provided"),]
 
+library (sjmisc)
+for (i in 1:nrow(kits.ready)){
+  if (str_contains(kits.ready$Address[i], "IN")){
+    print (kits.ready$Address[i])
+  } else {
+    kits.ready$Address[i] <- paste (kits.ready$Address[i],", IN")
+    print (kits.ready$Address[i])
+  } 
+}
 
-if(!requireNamespace("devtools")) install.packages("devtools")
-devtools::install_github("dkahle/ggmap")
 library("ggmap")
 
 source("src/API.R")
 print(API)
 register_google(key = API)
 
-allresults <- geocode(as.character(kits.ready$Address[1]), output = "all", source = "google")
-print(allresults$results[[1]]$geometry$viewport$northeast$lng)
-
+geo <- function(){
 for(i in 1:nrow(kits.ready)){
-  allresults <- geocode(as.character(kits.ready$Address[i]), output = "all", source = "google")
-
-  while (allresults$results[[1]]$address_components[[6]]$short_name != "IN" & is.na(allresults$results[[1]]$address_components[[6]]$short_name))
-    append (kits.ready$Address[i],", IN")
-    allresults <- geocode(as.character(kits.ready$Address[i]), output = "all", source = "google")
-
-  kits.ready$lon[i] <- as.numeric(allresults$results[[1]]$geometry$viewport$northeast$lng)
-  kits.ready$lat[i] <- as.numeric(allresults$results[[1]]$geometry$viewport$northeast$lat)
-  kits.ready$geoAddress[i] <- as.character(allresults$results[[1]]$formatted_address)
+  while(is.na(kits.ready$geo[i])){
+    result <- geocode(as.character(kits.ready$Address[i]), output = "latlona", source = "google")
+    kits.ready$geo[i]='Y'
+  } 
+  kits.ready$lon[i] <- as.numeric(result[1])
+  kits.ready$lat[i] <- as.numeric(result[2])
+  kits.ready$geoAddress[i] <- as.character(result[3])
 }
+}
+
+withCallingHandlers(geo(), warning = function(w) {
+  print ('error')
+  kits.ready$geo[i]='E'
+  invokeRestart("muffleWarning")})
+
 head(kits.ready)
 
 kits.ready <- apply(kits.ready,2,as.character)
@@ -85,7 +96,8 @@ sid = "4EDA38D4D6CA4BABBDA499D4CFB99F14"
 url<- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/ACAMA_INDIANA/tab_improve_v0704.asp?t_nm=improvements&l_cr=5&t_wc=|parcelid=", parcel_join$PARCELSTAT[5],"&sid=", sid)
 each.html <- read_html(url)
 write_html(each.html,"file.html",encoding = "UTF-8")
-
+full.parsed.tables <- each.html %>% 
+  html_table(fill = T)
 
 for(i in parcel_join) {
   url[i]<- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/ACAMA_INDIANA/tab_improve_v0704.asp?t_nm=improvements&l_cr=5&t_wc=|parcelid=", parcel_join$PARCELSTAT[i],"&sid=", sid)
