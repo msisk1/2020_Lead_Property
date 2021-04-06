@@ -12,6 +12,7 @@ kits.combined.unique <- kits.combined[!duplicated(kits.combined$`Kit ID`), ]
 
 kits.ready <- kits.combined.unique[!is.na(kits.combined.unique$Address), ]
 kits.ready$geo <- NA
+kits.ready$testlon <- NA
 
 kits.ready<-kits.ready[!(kits.ready$Address=="21506" | kits.ready$Address=="19391" | kits.ready$Address=="No Form Provided"),]
 
@@ -20,7 +21,7 @@ for (i in 1:nrow(kits.ready)){
   if (str_contains(kits.ready$Address[i], "IN")){
     print (kits.ready$Address[i])
   } else {
-    kits.ready$Address[i] <- paste (kits.ready$Address[i],", IN")
+    kits.ready$Address[i] <- paste (kits.ready$Address[i],", IN", sep="")
     print (kits.ready$Address[i])
   } 
 }
@@ -31,24 +32,31 @@ source("src/API.R")
 print(API)
 register_google(key = API)
 
-geo <- function(){
 for(i in 1:nrow(kits.ready)){
-  while(is.na(kits.ready$geo[i])){
+  if (kits.ready$geo[i] == 'Y' & is.na(kits.ready$geo[i]) == FALSE ){
+    print ('already geocoded')
+  } else{
     result <- geocode(as.character(kits.ready$Address[i]), output = "latlona", source = "google")
-    kits.ready$geo[i]='Y'
-  } 
-  kits.ready$lon[i] <- as.numeric(result[1])
-  kits.ready$lat[i] <- as.numeric(result[2])
-  kits.ready$geoAddress[i] <- as.character(result[3])
+    kits.ready$testlon[i] <- as.numeric(result[1])
+    if (is.na(kits.ready$testlon[i])==TRUE){
+      kits.ready$geo[i]='E'
+      kits.ready$lon[i] <- NA
+      kits.ready$lat[i] <- NA
+      kits.ready$geoAddress[i] <- NA
+     } else {
+      kits.ready$geo[i]='Y'
+      kits.ready$lon[i] <- as.numeric(result[1])
+      kits.ready$lat[i] <- as.numeric(result[2])
+      kits.ready$geoAddress[i] <- as.character(result[3])
+    }
+  }
 }
-}
-
-withCallingHandlers(geo(), warning = function(w) {
-  print ('error')
-  kits.ready$geo[i]='E'
-  invokeRestart("muffleWarning")})
 
 head(kits.ready)
+
+library(dplyr)
+
+kits.ready %>% select(-testlon)
 
 kits.ready <- apply(kits.ready,2,as.character)
 
