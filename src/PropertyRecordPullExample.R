@@ -12,7 +12,7 @@ parcelID.example01 <- "71-08-12-428-018.000-026" #this can be pulled from the pa
 parcelID.example02 <- "71-03-33-456-011.000-026"
 parcelID.example03 <- "71-09-15-362-031.000-023"
 
-sid = "0F49640AD03D4CCDBC37BE8A0423193D"  #this may be an identifer for my computer. If it dosn't work, a first debug step can be to goto a url in the browser, agree to the Terms, search for a parcel and copyu the sid at the end of the URL
+sid = "1227AE6B08E44021A16DB28A5F6403B3"  #this may be an identifer for my computer. If it dosn't work, a first debug step can be to goto a url in the browser, agree to the Terms, search for a parcel and copyu the sid at the end of the URL
 
 
 #otherwise, there are two types of records that are easy to access:
@@ -24,15 +24,43 @@ url.overview <- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/AC
 
             
 #There are also the record-level ones, I would use this if necessary
-url.record <- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/ACAMA_INDIANA/tab_dwell_v0704.asp?bldnum=R01&tname=DWELL&printview=true&t_wc=|parcelid=",
-                     parcelID.example01,
-                     "&sid=",
-                     sid)
+# url.record <- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/ACAMA_INDIANA/tab_dwell_v0704.asp?bldnum=R01&tname=DWELL&printview=true&t_wc=|parcelid=",
+#                      parcelID.example01,
+#                      "&sid=",
+#                      sid)
 
 
+library(XML)
+library(RCurl)
+library(rlist)
 
-each.html <- read_html(url.overview) #downloads the html file that contains the table of information
-write_html(each.html,"file.html",encoding = "UTF-8") # this is what you would use to cache the html docs
+#create a list of parcelID
+#write code to iterate through the list and pull the records
+#use example below to get the improvement data
+#if no record, throw it out (vacant lot): probably worth flagging to check if the parcel ID is correct
+#check for 0000
+
+# each.html <- read_html(url.overview) #downloads the html file that contains the table of information
+# write_html(each.html,"file.html",encoding = "UTF-8") # this is what you would use to cache the html docs
+#new try
+parcelID.example01 <- "71-08-12-428-018.000-026" #this can be pulled from the parcel layers
+parcelID.example01 <- "71-03-33-456-011.000-026"
+parcelID.example01 <- "71-08-01-108-016.000-026"
+
+url.overview <- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/ACAMA_INDIANA/tab_improve_v0704.asp?t_nm=improvements&l_cr=5&t_wc=|parcelid=",
+                       parcelID.example01,
+                       "&sid=",
+                       sid)
+theurl <- getURL(url.overview,.opts = list(ssl.verifypeer = FALSE) )
+tables <- readHTMLTable(theurl)
+tables <- list.clean(tables, fun = is.null, recursive = FALSE)
+# n.rows <- unlist(lapply(tables, function(t) dim(t)[1]))
+q <- as.data.frame(tables[2])
+library(tidyverse)
+q <- q[,4:ncol(q)] %>% na.omit()
+var.names <- c("Improvement Type Code", 	"Building No.", 	"ID No.", 	"Constructed Year", "Grade" 	,"Total Base Area","Replacement Cost")
+names(q)<-var.names
+q
 
 full.parsed.tables <- each.html %>% 
   html_table(fill = T) #converts it into an R table, the fill makes it work for blank cells
