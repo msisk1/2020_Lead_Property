@@ -57,33 +57,44 @@ head(kits.ready)
 library(dplyr)
 library(tidyr)
 
-kits.ready %>% select(-testlon)
-
 kits.ready <- apply(kits.ready,2,as.character)
 
 write.csv(kits.ready, 'kits_ready.csv', na="-")
 
 final.kits <- read.csv('kits_ready.csv')
 final.kits.no.na <- drop_na(final.kits)
+final.kits.no.na$IN <- NA
+
+for (i in 1:nrow(final.kits.no.na)){
+  if ((str_contains(final.kits.no.na$geoAddress[i], "south bend")) | (str_contains(final.kits.no.na$geoAddress[i], "elkhart")) | (str_contains(final.kits.no.na$geoAddress[i], "mishawaka"))|(str_contains(final.kits.no.na$geoAddress[i], "granger")) | (str_contains(final.kits.no.na$geoAddress[i], "roseland")) | (str_contains(final.kits.no.na$geoAddress[i], "notre dame"))) {
+    final.kits.no.na$IN[i]='Y'
+  } else {
+    final.kits.no.na$IN[i]='N'
+  } 
+}
+
+final.kits <- subset(final.kits.no.na, final.kits.no.na$IN=='Y')
 
 sheet_write(final.kits, ss = "1gzDR0CGf-kYddJZS7koD1iYwQQNKSiS1xdQ7AB0rxSo", sheet = "Combined + Geocoded")
 
 library (sf)
-parcels = st_read("src/sbparcels")
+parcels = st_read("src/SJC_2018_Parcels")
+
+
 parcels <- st_transform(parcels, crs=4326)
-final.kits.sf = st_as_sf(final.kits.no.na, coords = c(x = "lon", y = "lat"), crs = 4326)
+final.kits.sf = st_as_sf(final.kits, coords = c(x = "lon", y = "lat"), crs = 4326)
 
 parcel_join <- st_join(final.kits.sf, parcels, join = st_nearest_feature)
 as.data.frame(parcel_join)
 parcel_join$conyear <- NA
 
-kit_parcel <- subset(parcel_join, select = c("Kit.ID", "PARCELID"))
+write.csv(parcel_join, "src/parcel_join.csv")
 
 library(XML)
 library(RCurl)
 library(rlist)
 
-sid = "1944116155AE43FBA68587F1F8294D9C"
+sid = "154087D2E7D34377B7F9B0DDBF06B8CA"
 
 for(i in 1:nrow(parcel_join)){
   url.overview <- paste0("http://in-stjoseph-assessor.governmax.com/propertymax/ACAMA_INDIANA/tab_improve_v0704.asp?t_nm=improvements&l_cr=5&t_wc=|parcelid=",
@@ -93,26 +104,24 @@ for(i in 1:nrow(parcel_join)){
   print(url.overview)
   theurl <- getURL(url.overview,.opts = list(ssl.verifypeer = FALSE) )
   library(xml2)
-  each.html <- read_html(url.overview)
-  write_html(each.html,"file.html",encoding = "UTF-8") 
-  tables <- readHTMLTable("file.html")
-  #try without caching 
+  tables <- readHTMLTable(theurl)
   tables <- list.clean(tables, fun = is.null, recursive = FALSE)
   q <- as.data.frame(tables[2])
   
   library(tidyverse)
   q <- q[ ,4:ncol(q)] %>% na.omit()
-  if (nrow(q) < 2){
+  if (ncol(q) < 6){
       print (paste0 (parcel_join$PARCELSTAT[i], " is vacant"))
   }else{
       var.names <- c("Improvement Type Code", 	"Building No.", 	"ID No.", 	"Constructed Year", "Grade" 	,"Total Base Area","Replacement Cost")
       names(q)<-var.names
-      parcel_join$conyear[i] <- as.numeric(min(q$`Constructed Year`))
+      parcel_join$conyear[i] <- as.numeric(min(q$`Constructed Year`[q$`Constructed Year`>0]))
   }
 }
 
-
-
+# I had tried something like this
+# parcel_join$conyear[i] <- as.numeric(min(q[q$`Constructed Year`>0, `Constructed Year`]))
+# and also had issues
 
 
 library (leaflet)
