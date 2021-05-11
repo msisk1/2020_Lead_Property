@@ -115,14 +115,10 @@ for(i in 1:nrow(parcel_join)){
   }else{
       var.names <- c("Improvement Type Code", 	"Building No.", 	"ID No.", 	"Constructed Year", "Grade" 	,"Total Base Area","Replacement Cost")
       names(q)<-var.names
+      q <- filter (q, q$`Constructed Year`!="0000")
       parcel_join$conyear[i] <- as.numeric(min(q$`Constructed Year`[q$`Constructed Year`>0]))
   }
 }
-
-# I had tried something like this
-# parcel_join$conyear[i] <- as.numeric(min(q[q$`Constructed Year`>0, `Constructed Year`]))
-# and also had issues
-
 
 library (leaflet)
 library (sp)
